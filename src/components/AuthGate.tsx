@@ -11,7 +11,8 @@ import {
   HelpCircle,
   Key,
   UserCheck,
-  Plus
+  Plus,
+  Zap
 } from 'lucide-react';
 import { FacebookUser } from '../types';
 import { DEMO_USER } from '../data/mockData';
@@ -20,12 +21,14 @@ interface AuthGateProps {
   onLoginSuccess: (user: FacebookUser) => void;
   onOpenOAuthGuide: () => void;
   onOpenBulkImport?: () => void;
+  onOpenAutoScraper?: () => void;
 }
 
 export const AuthGate: React.FC<AuthGateProps> = ({
   onLoginSuccess,
   onOpenOAuthGuide,
   onOpenBulkImport,
+  onOpenAutoScraper,
 }) => {
   const [activeMode, setActiveMode] = useState<'options' | 'direct_form'>('options');
   const [profileName, setProfileName] = useState('');
@@ -142,22 +145,33 @@ export const AuthGate: React.FC<AuthGateProps> = ({
               <span>ربط حسابي ومجموعاتي مباشرة (بدون مطورين)</span>
             </button>
 
-            {/* 2. Direct Real Posts Bulk Import */}
-            {onOpenBulkImport && (
+            {/* 2. Direct Automated Scraper (Unofficial Group URL fetcher) */}
+            {onOpenAutoScraper && (
               <button
-                onClick={onOpenBulkImport}
-                className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-indigo-600 to-blue-700 hover:from-indigo-700 hover:to-blue-800 text-white font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2"
+                onClick={onOpenAutoScraper}
+                className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-purple-700 via-indigo-600 to-blue-700 hover:from-purple-800 hover:to-blue-800 text-white font-extrabold text-sm shadow-md shadow-indigo-600/25 transition-all flex items-center justify-center gap-2"
               >
-                <Sparkles className="w-4 h-4" />
-                <span>📥 جلب وجدولة منشورات حقيقية من مجموعتك الآن</span>
+                <Zap className="w-4 h-4 text-amber-300" />
+                <span>⚡ جلب تلقائي برابط المجموعة (Auto Scraper)</span>
               </button>
             )}
 
-            {/* 3. Instant Demo Mode */}
+            {/* 3. Direct Real Posts Bulk Import (Paste) */}
+            {onOpenBulkImport && (
+              <button
+                onClick={onOpenBulkImport}
+                className="w-full py-3 px-6 rounded-2xl border border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-bold text-xs transition-all flex items-center justify-center gap-2"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-blue-500" />
+                <span>📥 أو استيراد ولصق نصوص بوستات من المجموعة</span>
+              </button>
+            )}
+
+            {/* 4. Instant Demo Mode */}
             <button
               onClick={handleDemoAccess}
               disabled={isLoading}
-              className="w-full py-3 px-6 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-xs transition-all flex items-center justify-center gap-2"
+              className="w-full py-2.5 px-6 rounded-2xl text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 font-medium text-xs transition-all flex items-center justify-center gap-2"
             >
               <span>تصفح بحساب تاجر تجريبي مسبق التجهيز (للمعاينة فقط)</span>
             </button>

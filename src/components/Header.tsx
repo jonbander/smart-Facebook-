@@ -10,7 +10,8 @@ import {
   SlidersHorizontal,
   Table,
   Grid,
-  Bookmark
+  Bookmark,
+  Zap
 } from 'lucide-react';
 import { FacebookUser } from '../types';
 
@@ -30,6 +31,7 @@ interface HeaderProps {
   setShowSavedOnly: (show: boolean) => void;
   savedCount: number;
   onOpenBulkImport: () => void;
+  onOpenAutoScraper: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -48,6 +50,7 @@ export const Header: React.FC<HeaderProps> = ({
   setShowSavedOnly,
   savedCount,
   onOpenBulkImport,
+  onOpenAutoScraper,
 }) => {
   return (
     <header className="sticky top-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-xs">
@@ -106,14 +109,24 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
             </div>
 
+            {/* Auto Scraper Button (Direct URL Scraper) */}
+            <button
+              onClick={onOpenAutoScraper}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-xs transition-colors shrink-0"
+              title="جلب تلقائي غير مقيد برابط المجموعة"
+            >
+              <Zap className="w-3.5 h-3.5 text-amber-300" />
+              <span>جلب تلقائي بالرابط</span>
+            </button>
+
             {/* Bulk Import Button (Import real Facebook posts) */}
             <button
               onClick={onOpenBulkImport}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-[#1877F2] hover:bg-[#166fe5] text-white shadow-xs transition-colors shrink-0"
+              className="hidden lg:flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-[#1877F2] hover:bg-[#166fe5] text-white shadow-xs transition-colors shrink-0"
               title="استيراد منشورات مجموعتك الحقيقية من فيسبوك"
             >
               <Sparkles className="w-3.5 h-3.5" />
-              <span>استيراد بوستات حقيقية</span>
+              <span>لصق بوستات</span>
             </button>
 
             {/* Saved Bookmarks Filter */}

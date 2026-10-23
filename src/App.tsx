@@ -12,6 +12,7 @@ import { OAuthGuideModal } from './components/OAuthGuideModal';
 import { StatsBar } from './components/StatsBar';
 import { AuthGate } from './components/AuthGate';
 import { BulkImportModal } from './components/BulkImportModal';
+import { AutoScraperModal } from './components/AutoScraperModal';
 import { 
   FacebookUser, 
   FacebookGroup, 
@@ -29,7 +30,7 @@ import {
   exportPostsToCSV 
 } from './services/api';
 import { DEMO_USER } from './data/mockData';
-import { Sparkles, ShieldCheck, CheckCircle2, ArrowRight } from 'lucide-react';
+import { Sparkles, ShieldCheck, CheckCircle2, ArrowRight, Zap } from 'lucide-react';
 
 export default function App() {
   // 1. User & Core States (Initialize from storage, otherwise null to show the login gate first)
@@ -49,6 +50,7 @@ export default function App() {
   const [isAddGroupModalOpen, setIsAddGroupModalOpen] = useState<boolean>(false);
   const [isOAuthGuideOpen, setIsOAuthGuideOpen] = useState<boolean>(false);
   const [isBulkImportOpen, setIsBulkImportOpen] = useState<boolean>(false);
+  const [isAutoScraperOpen, setIsAutoScraperOpen] = useState<boolean>(false);
 
   // 3. Filters
   const [filters, setFilters] = useState<FilterOptions>({
@@ -297,6 +299,7 @@ export default function App() {
         setShowSavedOnly={setShowSavedOnly}
         savedCount={savedCount}
         onOpenBulkImport={() => setIsBulkImportOpen(true)}
+        onOpenAutoScraper={() => setIsAutoScraperOpen(true)}
       />
 
       {/* Top Banner when user is in demo mode */}
@@ -334,6 +337,7 @@ export default function App() {
           onLoginSuccess={handleLoginSuccess}
           onOpenOAuthGuide={() => setIsOAuthGuideOpen(true)}
           onOpenBulkImport={() => setIsBulkImportOpen(true)}
+          onOpenAutoScraper={() => setIsAutoScraperOpen(true)}
         />
       ) : (
         <>
@@ -365,32 +369,40 @@ export default function App() {
             {/* Real Facebook Group Posts Importer Action Card */}
             <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white p-5 rounded-3xl border border-blue-500/30 shadow-lg flex flex-col md:flex-row items-center justify-between gap-4 text-right">
               <div className="flex items-center gap-3.5">
-                <div className="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center font-black text-2xl shadow-md shrink-0">
-                  f
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-600 to-blue-600 text-white flex items-center justify-center font-black text-2xl shadow-md shrink-0">
+                  <Zap className="w-6 h-6 text-amber-300" />
                 </div>
                 <div>
                   <h3 className="font-extrabold text-sm sm:text-base text-white flex items-center gap-2">
-                    <span>جلب وجدولة منشورات مجموعتك الحقيقية في هذا الجدول</span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500 text-white">
-                      استيراد حقيقي
+                    <span>محرك الجلب التلقائي المباشر لمجموعات فيسبوك</span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400 text-slate-900">
+                      Auto Scraper ⚡
                     </span>
                   </h3>
                   <p className="text-xs text-slate-300 mt-1 leading-relaxed">
-                    هل تريد استبدال المنشورات الافتراضية ببوستات مجموعتك الحقيقية؟ انسخ أي بوستات من فيسبوك والصقها هنا ليتم استخراج الأسعار والمواصفات وأرقام الهواتف وجدولتها فوراً!
+                    ضع رابط مجموعتك وسيقوم السيرفر بالاتصال بفيسبوك وجلب أحدث بوستات البيع والشراء وتفكيكها وجدولتها فوراً بالذكاء الاصطناعي!
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 shrink-0 w-full md:w-auto justify-end">
+              <div className="flex flex-wrap items-center gap-2 shrink-0 w-full md:w-auto justify-end">
+                <button
+                  onClick={() => setIsAutoScraperOpen(true)}
+                  className="flex-1 md:flex-initial px-5 py-3 rounded-2xl bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-extrabold text-xs shadow-md shadow-indigo-600/30 transition-all flex items-center justify-center gap-2 active:scale-95"
+                >
+                  <Zap className="w-4 h-4 text-amber-300" />
+                  <span>جلب تلقائي برابط المجموعة</span>
+                </button>
                 <button
                   onClick={() => setIsBulkImportOpen(true)}
-                  className="flex-1 md:flex-initial px-5 py-3 rounded-2xl bg-[#1877F2] hover:bg-[#166fe5] text-white font-extrabold text-xs shadow-md transition-all flex items-center justify-center gap-2 active:scale-95"
+                  className="px-4 py-3 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition-colors shrink-0 flex items-center gap-1.5"
+                  title="لصق نصوص منشورات من فيسبوك"
                 >
-                  <Sparkles className="w-4 h-4" />
-                  <span>استيراد منشورات مجموعتي الآن</span>
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>لصق بوستات</span>
                 </button>
                 <button
                   onClick={handleClearDemoData}
-                  className="px-3.5 py-3 rounded-2xl bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white font-semibold text-xs transition-colors shrink-0"
+                  className="px-3.5 py-3 rounded-2xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 font-semibold text-xs transition-colors shrink-0"
                   title="مسح المنشورات التجريبية الافتراضية"
                 >
                   مسح التجريبي
@@ -497,6 +509,12 @@ export default function App() {
         isOpen={isBulkImportOpen}
         onClose={() => setIsBulkImportOpen(false)}
         onBulkImportSuccess={handleBulkImportSuccess}
+      />
+
+      <AutoScraperModal
+        isOpen={isAutoScraperOpen}
+        onClose={() => setIsAutoScraperOpen(false)}
+        onScrapeSuccess={handleBulkImportSuccess}
       />
 
     </div>

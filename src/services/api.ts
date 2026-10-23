@@ -196,6 +196,86 @@ export function clearStoredPosts(): void {
   localStorage.setItem(STORAGE_KEY_POSTS, JSON.stringify([]));
 }
 
+// Unofficial automated scraping call to fetch group posts by URL / cookies
+export async function autoFetchGroupPosts(
+  groupUrl: string,
+  groupName?: string,
+  c_user?: string,
+  xs?: string
+): Promise<{ success: boolean; posts: MarketplacePost[]; message: string; hitLoginWall?: boolean }> {
+  try {
+    const res = await fetch('/api/facebook/auto-fetch-group', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ groupUrl, groupName, c_user, xs }),
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.posts && Array.isArray(data.posts)) {
+        const formattedPosts: MarketplacePost[] = data.posts.map((item: any, idx: number) => {
+          const parsed: ParsedProductData = {
+            title: item.title,
+            category: item.category || 'ELECTRONICS',
+            subCategory: item.subCategory,
+            price: item.price || 0,
+            currency: item.currency || 'SAR',
+            originalPriceText: item.originalPriceText || `${item.price || 0} ${item.currency || 'SAR'}`,
+            isPriceNegotiable: !!item.isPriceNegotiable,
+            condition: item.condition || 'GOOD',
+            city: item.city || 'الرياض',
+            location: item.location || item.city || 'غير محدد',
+            contact: {
+              phone: item.phone,
+              whatsapp: item.whatsapp || item.phone,
+            },
+            specifications: item.specifications || {},
+            keyTags: item.keyTags || [item.city || 'حراج', item.category || 'سوق'],
+            summary: item.summary || item.title,
+            aiAnalyzed: true,
+          };
+
+          return {
+            id: `post_scraped_${Date.now()}_${idx}`,
+            facebookPostId: `fb_post_${Math.floor(Math.random() * 100000000)}`,
+            groupId: data.groupId || 'grp_scraped',
+            groupName: data.groupName || groupName || 'مجموعة فيسبوك الحقيقية',
+            author: {
+              name: item.authorName || 'بائع فيسبوك',
+              avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100',
+            },
+            createdAt: new Date(Date.now() - idx * 15 * 60 * 1000).toISOString(),
+            rawContent: item.rawSnippet || item.title,
+            mediaUrls: [
+              item.category === 'CARS' ? 'https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?w=600' :
+              item.category === 'PHONES' ? 'https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=600' :
+              item.category === 'REAL_ESTATE' ? 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=600' :
+              'https://images.unsplash.com/photo-1603302576837-37561b2e2302?w=600'
+            ],
+            parsed,
+            saved: false,
+          };
+        });
+
+        return {
+          success: data.success,
+          posts: formattedPosts,
+          message: data.message || 'تم الجلب التلقائي بنجاح',
+          hitLoginWall: data.hitLoginWall,
+        };
+      }
+    }
+  } catch (err: any) {
+    console.warn('Error in autoFetchGroupPosts:', err);
+  }
+
+  return {
+    success: false,
+    posts: [],
+    message: 'تعذر الاتصال بخادم الجلب التلقائي حالياً',
+  };
+}
+
 // Fetch OAuth URL from server
 export async function getFacebookAuthUrl(appId?: string): Promise<string> {
   try {
