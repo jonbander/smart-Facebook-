@@ -29,6 +29,7 @@ interface HeaderProps {
   showSavedOnly: boolean;
   setShowSavedOnly: (show: boolean) => void;
   savedCount: number;
+  onOpenBulkImport: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -46,6 +47,7 @@ export const Header: React.FC<HeaderProps> = ({
   showSavedOnly,
   setShowSavedOnly,
   savedCount,
+  onOpenBulkImport,
 }) => {
   return (
     <header className="sticky top-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-xs">
@@ -103,6 +105,16 @@ export const Header: React.FC<HeaderProps> = ({
                 <span className="hidden md:inline">بطاقات</span>
               </button>
             </div>
+
+            {/* Bulk Import Button (Import real Facebook posts) */}
+            <button
+              onClick={onOpenBulkImport}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-[#1877F2] hover:bg-[#166fe5] text-white shadow-xs transition-colors shrink-0"
+              title="استيراد منشورات مجموعتك الحقيقية من فيسبوك"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>استيراد بوستات حقيقية</span>
+            </button>
 
             {/* Saved Bookmarks Filter */}
             <button
@@ -163,40 +175,51 @@ export const Header: React.FC<HeaderProps> = ({
 
             {/* User Login / Profile Badge */}
             {user ? (
-              <div className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                <img
-                  src={user.picture}
-                  alt={user.name}
-                  className="w-8 h-8 rounded-full object-cover border border-blue-400"
-                />
-                <div className="hidden md:block text-right">
-                  <div className="text-xs font-bold text-slate-900 dark:text-white leading-tight flex items-center gap-1">
-                    {user.name}
-                    {user.isDemo && (
-                      <span className="px-1.5 py-0.2 rounded text-[10px] bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200">
-                        تجريبي
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
-                    متصل بالمجموعات
-                  </div>
-                </div>
+              <div className="flex items-center gap-2">
                 <button
-                  onClick={onLogout}
-                  title="تسجيل الخروج أو تبديل الحساب"
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                  onClick={onOpenLogin}
+                  className="flex items-center gap-2 px-3.5 py-2 rounded-xl font-bold text-xs bg-[#1877F2] hover:bg-[#166fe5] text-white shadow-sm transition-all"
+                  title="ربط حساب فيسبوك آخر أو إدخال رمز وصول"
                 >
-                  <LogOut className="w-3.5 h-3.5" />
+                  <span className="font-black text-sm">f</span>
+                  <span>{user.isDemo ? 'ربط حسابك الحقيقي بفيسبوك' : 'تحديث اتصال فيسبوك'}</span>
                 </button>
+
+                <div className="hidden sm:flex items-center gap-2 pl-1 pr-2 py-1 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                  <img
+                    src={user.picture}
+                    alt={user.name}
+                    className="w-8 h-8 rounded-full object-cover border border-blue-400"
+                  />
+                  <div className="hidden md:block text-right">
+                    <div className="text-xs font-bold text-slate-900 dark:text-white leading-tight flex items-center gap-1">
+                      {user.name}
+                      {user.isDemo && (
+                        <span className="px-1.5 py-0.2 rounded text-[10px] bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200">
+                          حساب تجريبي
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+                      متصل بالمجموعات
+                    </div>
+                  </div>
+                  <button
+                    onClick={onLogout}
+                    title="تسجيل الخروج"
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             ) : (
               <button
                 onClick={onOpenLogin}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs bg-[#1877F2] hover:bg-[#166fe5] text-white shadow-sm transition-all"
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-extrabold text-xs bg-[#1877F2] hover:bg-[#166fe5] text-white shadow-md shadow-blue-600/30 transition-all animate-pulse"
               >
-                <span className="font-black text-sm">f</span>
-                <span>تسجيل الدخول بفيسبوك</span>
+                <span className="font-black text-base">f</span>
+                <span>تسجيل الدخول بحساب فيسبوك</span>
               </button>
             )}
 

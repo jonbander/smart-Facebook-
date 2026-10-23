@@ -218,6 +218,95 @@ ${content}
   }
 });
 
+// 4. AI Bulk Post Analyzer (Extract multiple posts from raw Facebook text)
+app.post('/api/ai/analyze-bulk-posts', async (req, res) => {
+  const { rawText, groupName } = req.body;
+  if (!rawText) {
+    return res.status(400).json({ error: 'rawText is required' });
+  }
+
+  if (!geminiClient) {
+    return res.status(200).json({
+      fallback: true,
+      posts: [],
+      message: 'Gemini client not initialized'
+    });
+  }
+
+  try {
+    const prompt = `أنت خبير فائق الذكاء في استخراج وتنظيم إعلانات البيع والشراء من مجموعات فيسبوك.
+أمامك نص يحتوي على منشور أو مجموعة منشورات تم نسخها مباشرة من فيسبوك.
+حلل النص واستخرج كل منشور بيع/شراء كعنصر منفصل في مصفوفة بتنسيق JSON:
+
+النص الخام:
+"""
+${rawText}
+"""
+
+لكل منشور استخرج:
+- title: اسم وعنوان المنتج بوضوح
+- authorName: اسم صاحب المنشور إن وجد أو "معلن فيسبوك"
+- category: اختر بدقة من ["PHONES", "ELECTRONICS", "CARS", "REAL_ESTATE", "FURNITURE", "APPLIANCES", "FASHION", "SERVICES"]
+- subCategory: الفئة الفرعية
+- price: السعر كرقم صحيح فقط (بدون نصوص)
+- currency: العملة (SAR, AED, EGP, USD)
+- originalPriceText: نص السعر الأصلي
+- isPriceNegotiable: هل السعر قابل للتفاوض
+- condition: ["BRAND_NEW", "LIKE_NEW", "EXCELLENT", "GOOD", "FAIR"]
+- city: المدينة
+- location: الحي أو العنوان
+- phone: رقم الهاتف إن وجد
+- whatsapp: رقم الواتساب بالصيغة الدولية إن أمكن
+- specifications: كائن يحتوي أهم المواصفات الفنية المذكورة (الموديل، الرام، الذاكرة، الممشى، سنة الصنع، عدد الغرف، مساحة، حالة البطارية، إلخ)
+- keyTags: مصفوفة لأهم 3 إلى 5 وسوم
+- summary: ملخص المنتج بسطر واحد
+- rawSnippet: مقتطف نص المنشور الأصلي`;
+
+    const aiRes = await geminiClient.models.generateContent({
+      model: 'gemini-3.8-flash',
+      contents: prompt,
+      config: {
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              title: { type: Type.STRING },
+              authorName: { type: Type.STRING },
+              category: { type: Type.STRING },
+              subCategory: { type: Type.STRING },
+              price: { type: Type.NUMBER },
+              currency: { type: Type.STRING },
+              originalPriceText: { type: Type.STRING },
+              isPriceNegotiable: { type: Type.BOOLEAN },
+              condition: { type: Type.STRING },
+              city: { type: Type.STRING },
+              location: { type: Type.STRING },
+              phone: { type: Type.STRING },
+              whatsapp: { type: Type.STRING },
+              specifications: { type: Type.OBJECT },
+              keyTags: {
+                type: Type.ARRAY,
+                items: { type: Type.STRING },
+              },
+              summary: { type: Type.STRING },
+              rawSnippet: { type: Type.STRING },
+            },
+            required: ['title', 'category', 'price', 'currency', 'condition', 'city', 'summary'],
+          },
+        },
+      },
+    });
+
+    const parsedItems = JSON.parse(aiRes.text || '[]');
+    return res.json({ posts: parsedItems, aiAnalyzed: true });
+  } catch (err: any) {
+    console.error('Error in bulk Gemini analysis:', err);
+    return res.status(200).json({ fallback: true, error: err.message, posts: [] });
+  }
+});
+
 // App URL info
 app.get('/api/info', (req, res) => {
   res.json({

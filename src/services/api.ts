@@ -100,6 +100,102 @@ export async function analyzePostWithAI(content: string): Promise<ParsedProductD
   return parseRawFacebookPost(content);
 }
 
+// Bulk AI Analysis for multiple posts copied from a Facebook group
+export async function analyzeBulkPostsWithAI(rawText: string, groupName: string): Promise<MarketplacePost[]> {
+  try {
+    const res = await fetch('/api/ai/analyze-bulk-posts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rawText, groupName }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.posts && Array.isArray(data.posts) && data.posts.length > 0) {
+        return data.posts.map((item: any, idx: number) => {
+          const parsed: ParsedProductData = {
+            title: item.title,
+            category: item.category || 'ELECTRONICS',
+            subCategory: item.subCategory,
+            price: item.price || 0,
+            currency: item.currency || 'SAR',
+            originalPriceText: item.originalPriceText || `${item.price || 0} ${item.currency || 'SAR'}`,
+            isPriceNegotiable: !!item.isPriceNegotiable,
+            condition: item.condition || 'GOOD',
+            city: item.city || 'الرياض',
+            location: item.location || item.city || 'غير محدد',
+            contact: {
+              phone: item.phone,
+              whatsapp: item.whatsapp || item.phone,
+            },
+            specifications: item.specifications || {},
+            keyTags: item.keyTags || [item.city || 'سوق', item.category || 'إعلان'],
+            summary: item.summary || item.title,
+            aiAnalyzed: true,
+          };
+
+          return {
+            id: `post_bulk_${Date.now()}_${idx}`,
+            facebookPostId: `fb_post_${Math.floor(Math.random() * 100000000)}`,
+            groupId: 'grp_custom_' + Date.now(),
+            groupName: groupName || 'مجموعة فيسبوك الحقيقية',
+            author: {
+              name: item.authorName || 'معلن حقيقي',
+              avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100',
+            },
+            createdAt: new Date(Date.now() - idx * 10 * 60 * 1000).toISOString(),
+            rawContent: item.rawSnippet || rawText,
+            mediaUrls: [
+              item.category === 'CARS' ? 'https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?w=600' :
+              item.category === 'PHONES' ? 'https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=600' :
+              item.category === 'REAL_ESTATE' ? 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=600' :
+              'https://images.unsplash.com/photo-1603302576837-37561b2e2302?w=600'
+            ],
+            parsed,
+            saved: false,
+          };
+        });
+      }
+    }
+  } catch (err) {
+    console.warn('Backend bulk AI analysis fallback', err);
+  }
+
+  // Fallback: Split rawText into chunks by common separators (newlines, emojis, dashes)
+  const chunks = rawText.split(/(?:\n---+\n|\n\n\n+|(?=للبيع|عرض|فرصة|ما شاء الله|مطلوب|سيارة|شقة|ايفون|لابتوب))/i)
+    .map(c => c.trim())
+    .filter(c => c.length > 25);
+
+  const parsedChunks = chunks.length > 0 ? chunks : [rawText];
+
+  return parsedChunks.map((chunk, idx) => {
+    const parsed = parseRawFacebookPost(chunk);
+    return {
+      id: `post_bulk_fallback_${Date.now()}_${idx}`,
+      facebookPostId: `fb_post_${Math.floor(Math.random() * 100000000)}`,
+      groupId: 'grp_custom_' + Date.now(),
+      groupName: groupName || 'مجموعة فيسبوك الحقيقية',
+      author: {
+        name: 'معلن فيسبوك',
+        avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100',
+      },
+      createdAt: new Date(Date.now() - idx * 10 * 60 * 1000).toISOString(),
+      rawContent: chunk,
+      mediaUrls: [
+        parsed.category === 'CARS' ? 'https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?w=600' :
+        parsed.category === 'PHONES' ? 'https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=600' :
+        parsed.category === 'REAL_ESTATE' ? 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=600' :
+        'https://images.unsplash.com/photo-1603302576837-37561b2e2302?w=600'
+      ],
+      parsed,
+      saved: false,
+    };
+  });
+}
+
+export function clearStoredPosts(): void {
+  localStorage.setItem(STORAGE_KEY_POSTS, JSON.stringify([]));
+}
+
 // Fetch OAuth URL from server
 export async function getFacebookAuthUrl(appId?: string): Promise<string> {
   try {

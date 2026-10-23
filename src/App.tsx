@@ -10,6 +10,8 @@ import { AddPostModal } from './components/AddPostModal';
 import { AddGroupModal } from './components/AddGroupModal';
 import { OAuthGuideModal } from './components/OAuthGuideModal';
 import { StatsBar } from './components/StatsBar';
+import { AuthGate } from './components/AuthGate';
+import { BulkImportModal } from './components/BulkImportModal';
 import { 
   FacebookUser, 
   FacebookGroup, 
@@ -27,11 +29,11 @@ import {
   exportPostsToCSV 
 } from './services/api';
 import { DEMO_USER } from './data/mockData';
-import { Sparkles, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { Sparkles, ShieldCheck, CheckCircle2, ArrowRight } from 'lucide-react';
 
 export default function App() {
-  // 1. User & Core States
-  const [user, setUser] = useState<FacebookUser | null>(() => getStoredUser() || DEMO_USER);
+  // 1. User & Core States (Initialize from storage, otherwise null to show the login gate first)
+  const [user, setUser] = useState<FacebookUser | null>(() => getStoredUser());
   const [groups, setGroups] = useState<FacebookGroup[]>(() => getStoredGroups());
   const [posts, setPosts] = useState<MarketplacePost[]>(() => getStoredPosts());
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
@@ -46,6 +48,7 @@ export default function App() {
   const [isAddPostModalOpen, setIsAddPostModalOpen] = useState<boolean>(false);
   const [isAddGroupModalOpen, setIsAddGroupModalOpen] = useState<boolean>(false);
   const [isOAuthGuideOpen, setIsOAuthGuideOpen] = useState<boolean>(false);
+  const [isBulkImportOpen, setIsBulkImportOpen] = useState<boolean>(false);
 
   // 3. Filters
   const [filters, setFilters] = useState<FilterOptions>({
@@ -131,12 +134,25 @@ export default function App() {
     showToast(`تمت إضافة مجموعة "${newGroup.name}" وتفعيل المزامنة!`);
   };
 
+  const handleBulkImportSuccess = (newPosts: MarketplacePost[], replaceExisting: boolean) => {
+    const updated = replaceExisting ? newPosts : [...newPosts, ...posts];
+    setPosts(updated);
+    saveStoredPosts(updated);
+    showToast(`تم استخراج وجدولة ${newPosts.length} إعلانات حقيقية من مجموعتك بنجاح! 🚀`);
+  };
+
+  const handleClearDemoData = () => {
+    setPosts([]);
+    saveStoredPosts([]);
+    showToast('تم مسح البيانات التجريبية. الجدول الآن مخصص لمنشوراتك الحقيقية فقط.');
+  };
+
   const handleRefresh = () => {
     setIsRefreshing(true);
     setTimeout(() => {
       setIsRefreshing(false);
-      showToast('تم فحص المنشورات الجديدة وتحديث الأسعار والمواصفات!');
-    }, 1000);
+      showToast('تم فحص المنشورات وتحديث الأسعار والمواصفات!');
+    }, 800);
   };
 
   const handleExport = () => {
@@ -280,64 +296,141 @@ export default function App() {
         showSavedOnly={showSavedOnly}
         setShowSavedOnly={setShowSavedOnly}
         savedCount={savedCount}
+        onOpenBulkImport={() => setIsBulkImportOpen(true)}
       />
 
-      {/* Connected Facebook Buy/Sell Groups Bar */}
-      <GroupsBar
-        groups={groups}
-        selectedGroupId={selectedGroupId}
-        onSelectGroup={handleGroupSelect}
-        onOpenAddGroup={() => setIsAddGroupModalOpen(true)}
-      />
-
-      {/* Search & Advanced Filters Bar */}
-      <SearchAndFilters
-        filters={filters}
-        onFilterChange={setFilters}
-        availableCities={availableCities}
-        totalResults={filteredPosts.length}
-      />
-
-      {/* Main Body Content */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-        
-        {/* Marketplace Summary Metrics */}
-        <StatsBar
-          posts={filteredPosts}
-          totalGroupsCount={groups.length}
-        />
-
-        {/* Informational banner when filter is active or saved only is on */}
-        {showSavedOnly && (
-          <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 flex items-center justify-between">
-            <div className="text-xs font-bold text-amber-800 dark:text-amber-300">
-              أنت الآن تستعرض الإعلانات المحفوظة في قائمتك المفضلة ({filteredPosts.length} إعلان)
+      {/* Top Banner when user is in demo mode */}
+      {user?.isDemo && (
+        <div className="bg-gradient-to-r from-blue-700 via-[#1877F2] to-indigo-700 text-white py-3 px-4 shadow-sm border-b border-blue-400/30">
+          <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3 text-right">
+            <div className="flex items-center gap-2.5">
+              <span className="w-6 h-6 rounded-lg bg-white/20 text-white flex items-center justify-center font-bold text-xs shrink-0">
+                f
+              </span>
+              <div>
+                <span className="font-extrabold text-xs block sm:inline">
+                  أنت تتصفح حالياً بالوضع التجريبي المسبق (أحمد الشريف).
+                </span>{' '}
+                <span className="text-[11px] text-blue-100">
+                  هل ترغب في ربط حسابك الحقيقي على فيسبوك لاستعراض مجموعاتك الخاصة؟
+                </span>
+              </div>
             </div>
             <button
-              onClick={() => setShowSavedOnly(false)}
-              className="text-xs text-amber-900 dark:text-amber-200 font-bold underline hover:no-underline"
+              onClick={() => setIsLoginModalOpen(true)}
+              className="px-4 py-2 rounded-xl bg-white text-[#1877F2] hover:bg-blue-50 font-extrabold text-xs shadow-md transition-all shrink-0 flex items-center gap-1.5 active:scale-95"
             >
-              عرض جميع المنشورات
+              <span className="font-black text-sm">f</span>
+              <span>تسجيل الدخول وربط حسابك بفيسبوك الآن</span>
+              <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Organized Scheduled Table OR Cards Grid */}
-        {viewMode === 'table' ? (
-          <PostsTable
-            posts={filteredPosts}
-            onSelectPost={(post) => setSelectedPost(post)}
-            onToggleSave={handleToggleSave}
+      {/* Main View: AuthGate Welcome Portal OR Full Marketplace Dashboard */}
+      {!user ? (
+        <AuthGate
+          onLoginSuccess={handleLoginSuccess}
+          onOpenOAuthGuide={() => setIsOAuthGuideOpen(true)}
+          onOpenBulkImport={() => setIsBulkImportOpen(true)}
+        />
+      ) : (
+        <>
+          {/* Connected Facebook Buy/Sell Groups Bar */}
+          <GroupsBar
+            groups={groups}
+            selectedGroupId={selectedGroupId}
+            onSelectGroup={handleGroupSelect}
+            onOpenAddGroup={() => setIsAddGroupModalOpen(true)}
           />
-        ) : (
-          <PostsGrid
-            posts={filteredPosts}
-            onSelectPost={(post) => setSelectedPost(post)}
-            onToggleSave={handleToggleSave}
-          />
-        )}
 
-      </main>
+          {/* Search & Advanced Filters Bar */}
+          <SearchAndFilters
+            filters={filters}
+            onFilterChange={setFilters}
+            availableCities={availableCities}
+            totalResults={filteredPosts.length}
+          />
+
+          {/* Main Body Content */}
+          <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+            
+            {/* Marketplace Summary Metrics */}
+            <StatsBar
+              posts={filteredPosts}
+              totalGroupsCount={groups.length}
+            />
+
+            {/* Real Facebook Group Posts Importer Action Card */}
+            <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white p-5 rounded-3xl border border-blue-500/30 shadow-lg flex flex-col md:flex-row items-center justify-between gap-4 text-right">
+              <div className="flex items-center gap-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center font-black text-2xl shadow-md shrink-0">
+                  f
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-sm sm:text-base text-white flex items-center gap-2">
+                    <span>جلب وجدولة منشورات مجموعتك الحقيقية في هذا الجدول</span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500 text-white">
+                      استيراد حقيقي
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                    هل تريد استبدال المنشورات الافتراضية ببوستات مجموعتك الحقيقية؟ انسخ أي بوستات من فيسبوك والصقها هنا ليتم استخراج الأسعار والمواصفات وأرقام الهواتف وجدولتها فوراً!
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0 w-full md:w-auto justify-end">
+                <button
+                  onClick={() => setIsBulkImportOpen(true)}
+                  className="flex-1 md:flex-initial px-5 py-3 rounded-2xl bg-[#1877F2] hover:bg-[#166fe5] text-white font-extrabold text-xs shadow-md transition-all flex items-center justify-center gap-2 active:scale-95"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  <span>استيراد منشورات مجموعتي الآن</span>
+                </button>
+                <button
+                  onClick={handleClearDemoData}
+                  className="px-3.5 py-3 rounded-2xl bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white font-semibold text-xs transition-colors shrink-0"
+                  title="مسح المنشورات التجريبية الافتراضية"
+                >
+                  مسح التجريبي
+                </button>
+              </div>
+            </div>
+
+            {/* Informational banner when filter is active or saved only is on */}
+            {showSavedOnly && (
+              <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 flex items-center justify-between">
+                <div className="text-xs font-bold text-amber-800 dark:text-amber-300">
+                  أنت الآن تستعرض الإعلانات المحفوظة في قائمتك المفضلة ({filteredPosts.length} إعلان)
+                </div>
+                <button
+                  onClick={() => setShowSavedOnly(false)}
+                  className="text-xs text-amber-900 dark:text-amber-200 font-bold underline hover:no-underline"
+                >
+                  عرض جميع المنشورات
+                </button>
+              </div>
+            )}
+
+            {/* Organized Scheduled Table OR Cards Grid */}
+            {viewMode === 'table' ? (
+              <PostsTable
+                posts={filteredPosts}
+                onSelectPost={(post) => setSelectedPost(post)}
+                onToggleSave={handleToggleSave}
+              />
+            ) : (
+              <PostsGrid
+                posts={filteredPosts}
+                onSelectPost={(post) => setSelectedPost(post)}
+                onToggleSave={handleToggleSave}
+              />
+            )}
+
+          </main>
+        </>
+      )}
 
       {/* Footer */}
       <footer className="mt-auto border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-6 text-center text-xs text-slate-500">
@@ -398,6 +491,12 @@ export default function App() {
       <OAuthGuideModal
         isOpen={isOAuthGuideOpen}
         onClose={() => setIsOAuthGuideOpen(false)}
+      />
+
+      <BulkImportModal
+        isOpen={isBulkImportOpen}
+        onClose={() => setIsBulkImportOpen(false)}
+        onBulkImportSuccess={handleBulkImportSuccess}
       />
 
     </div>

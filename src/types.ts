@@ -24,6 +24,7 @@ export interface FacebookUser {
   isDemo: boolean;
   accessToken?: string;
   connectedAt: string;
+  profileUrl?: string;
 }
 
 export interface FacebookGroup {
